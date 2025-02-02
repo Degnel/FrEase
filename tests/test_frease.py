@@ -1,29 +1,60 @@
 from frEase.trainer import ProgressiveTrainer
 from frEase.recipes import ProgressiveRecipes
-import torch.nn as nn
+from torch import nn, optim
+from torch.utils.data import DataLoader, Dataset
+import torch
 
-# Création du modèle (par exemple un nn.Sequential ou tout autre nn.Module)
-model = nn.Sequential(
-    nn.Linear(10, 10),
-    nn.ReLU(),
-    nn.Linear(10, 2)
-)
+class Model(nn.Module):
+    def __init__(self, dim):
+        super(Model, self).__init__()
+        self.ml = nn.ModuleList([
+            nn.ReLU(),
+            nn.Linear(dim, dim),
+            nn.ReLU(),
+            nn.Linear(dim, dim),
+            nn.ReLU()
+        ])
+        self.linear1 = nn.Linear(dim, dim)
+        self.linear2 = nn.Linear(dim, dim)
+    def forward(self, x):
+        x = self.linear1(x)
+        for module in self.ml:
+            x = module(x)
+        x = self.linear2(x)
+        return x
 
-# Initialisation du trainer (le modèle sera automatiquement découpé via ice_cube_dicer)
-trainer = ProgressiveTrainer()
+class xyDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = X
+        self.y = y
 
-# Choix de la recette d'entraînement
-training_recipe = ProgressiveRecipes.progressive_simple(model, epochs, scaling_factor, lr, bs, optimizer, criterion)
-# On découpe le modèle
-# On met les lr et bs sous la bonne forme
-# On setup les optimizers
+    def __len__(self):
+        return len(self.X)
 
-# Définition des autres éléments nécessaires à l'entraînement
-# data_loader, optimizer et loss_fn doivent être définis par l'utilisateur.
-epochs = 5                      # ou une liste d'entiers pour plusieurs cycles
-scaling_factor = 1.3
-lr = 0.0001                     # peut être une valeur unique, une liste ou une liste de listes
-bs = 32                         # même logique pour la batch_size de base
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+    
 
-# Lancement de l'entraînement
-trainer.train(data_loader, training_recipe)
+epochs = 10
+lr = 0.001
+group_size = 1
+global_trainning = 2
+scaling_factor = 2
+batch_size = 99
+mini_batch_size = 16
+dim = 10
+
+model = Model(dim)
+
+X = torch.zeros((batch_size, mini_batch_size, dim))
+y = torch.zeros((batch_size, mini_batch_size, dim))
+dataset = xyDataset(X, y)
+data_loader = DataLoader(dataset, batch_size=batch_size)
+optimizer = optim.AdamW
+optimizer(model.parameters(), lr)
+criterion = nn.MSELoss()
+
+training_recipe = ProgressiveRecipes(model)
+training_recipe.progressive_simple(epochs, lr, group_size, global_trainning, scaling_factor)
+trainer = ProgressiveTrainer(training_recipe)
+trainer.train(data_loader, optimizer, criterion)

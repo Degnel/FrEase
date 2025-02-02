@@ -13,7 +13,7 @@ transfomer_recipe = ProgressiveRecipes(model)
 transfomer_recipe.progressive_simple(
     epochs=[2, 3, 4, 5, 6, 7, 8, 9, 10],
     lr=0.001,
-    batch_size=16,
+    group_size=1,
     global_trainning=3,
     scaling_factor=1.2,
 )
@@ -24,7 +24,7 @@ print(transfomer_recipe)
 transfomer_recipe.iterative_freeze_defreeze(
     epochs=[2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 10, 10, 10],
     lr=0.001,
-    batch_size=[16, 32, 32, 32, 16, 32, 32, 32, 16, 32, 32, 32, 16, 32, 32, 32],
+    group_size=[1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2],
     iterations=2,
     scaling_factor=1.5,
 )

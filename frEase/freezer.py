@@ -6,7 +6,11 @@ class Freezer():
         if model:
             self.model = model
         else:
-            recipe.ml_ptr = nn.ModuleList([])
+            # for _ in range(len(recipe.ml_ptr)):
+            #     recipe.ml_ptr.pop(0)
+            # checker s'il n'y a pas d'effet de bord en faisant de manière brutale
+            # sinon on untilise la boucle ci-dessus
+            recipe.ml_ptr._modules = {}
             self.model = recipe.model
         self.recipe = recipe
         self.current_stage = start_at_stage

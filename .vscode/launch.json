@@ -10,6 +10,13 @@
             "request": "launch",
             "program": "./tests/test_recipes.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: frEase Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./tests/test_frease.py",
+            "console": "integratedTerminal"
         }
     ]
 }

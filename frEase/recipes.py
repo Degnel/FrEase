@@ -2,16 +2,16 @@ from torch import nn
 from .utils import floor_power2
 
 class ProgressiveRecipes:
-    def __init__(self, model):
+    def __init__(self, model: nn.Module):
         self.model = model
-        self.ml_ptr, self.ice_cubes = self.extract_ice_cubes(model)
+        self.ml_ptr, self.ice_cubes = self.ice_cube_dicer(model)
 
-    def _init_params(self, epochs, lr, batch_size, scaling_factor):
+    def _init_params(self, epochs, lr, group_size, scaling_factor):
         self.epochs = self.create_epochs(epochs)
         self.lr = self.create_hyperparam(lr, scaling_factor)
-        self.batch_size = self.create_hyperparam(batch_size, scaling_factor)
+        self.group_size = self.create_hyperparam(group_size, scaling_factor)
         
-    def progressive_simple(self, epochs=10, lr=0.001, batch_size=16, global_trainning=0, scaling_factor=1):
+    def progressive_simple(self, epochs=10, lr=0.001, group_size=1, global_trainning=0, scaling_factor=1):
         """
         Recette "progressive_simple" :
           - Le modèle passe par chaque IceCube (chaque freezing constitue un cycle) puis une phase globale.
@@ -21,10 +21,10 @@ class ProgressiveRecipes:
         frozen_cubes = [[j != i for j in range(i+1)] for i in range(ic_len)]
         frozen_cubes.append([[False] * ic_len] * global_trainning)
         self.frozen_cubes = frozen_cubes
-        self._init_params(epochs, lr, batch_size, scaling_factor)
+        self._init_params(epochs, lr, group_size, scaling_factor)
 
 
-    def iterative_freeze_defreeze(self, epochs, lr, batch_size, iterations=1, scaling_factor=1):
+    def iterative_freeze_defreeze(self, epochs, lr, group_size, iterations=1, scaling_factor=1):
         """
         Recette "iterative_freeze_defreeze" :
           - Le modèle est complet dès le départ, mais les IceCube ne sont dégelé qu'un part un.
@@ -33,11 +33,11 @@ class ProgressiveRecipes:
         ic_len = len(self.ice_cubes)
         frozen_cubes = [[i == j for j in range(ic_len)] for i in range(ic_len)] * iterations
         self.frozen_cubes = frozen_cubes
-        self._init_params(epochs, lr, batch_size, scaling_factor)
+        self._init_params(epochs, lr, group_size, scaling_factor)
 
     def create_hyperparam(self, param, scaling_factor=1):
         """
-        Génère la structure de lr ou batch_size selon le format donné.
+        Génère la structure de lr ou group_size selon le format donné.
         """
         length = len(self.frozen_cubes)
         if isinstance(param, (int, float)):
@@ -50,7 +50,7 @@ class ProgressiveRecipes:
                 assert len(param) == length
                 return [[param[i] * floor_power2(scaling_factor ** j) for j in range(self.epochs[i])] for i in range(length)]
         else:
-            raise ValueError("lr and batch_size must be integers, floats, lists or lists of lists.")
+            raise ValueError("lr and group_size must be integers, floats, lists or lists of lists.")
     
     def create_epochs(self, epochs):
         """
@@ -64,22 +64,18 @@ class ProgressiveRecipes:
         else:
             raise ValueError("epochs must be an integer or a list of integers.")
     
-    def extract_ice_cubes(self, model):
-        # Vérification des enfants directs
+    def ice_cube_dicer(self, model):
         for name, module in model.named_children():
             if isinstance(module, nn.ModuleList):
                 return module, [(f"{name}.{i}", sub_module)
                         for i, sub_module in enumerate(module)]
         
-        # Sinon, recherche dans le premier niveau d'imbrication
         for name, module in model.named_children():
             for sub_name, sub_module in module.named_children():
                 if isinstance(sub_module, nn.ModuleList):
                     full_name = f"{name}.{sub_name}"
                     return sub_module, [(f"{full_name}.{i}", sub_module_i)
                             for i, sub_module_i in enumerate(sub_module)]
-        
-        # Aucun ModuleList trouvé
         return []
     
     def __repr__(self):
@@ -87,6 +83,6 @@ class ProgressiveRecipes:
             ice_cubes: {self.ice_cubes}
             epochs: {self.epochs}
             lr: {self.lr}
-            batch_size: {self.batch_size}
+            group_size: {self.group_size}
             frozen_cubes: {self.frozen_cubes}
         """
