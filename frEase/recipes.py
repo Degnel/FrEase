@@ -4,7 +4,7 @@ from .utils import floor_power2
 class ProgressiveRecipes:
     def __init__(self, model):
         self.model = model
-        self.ice_cubes = self.extract_ice_cubes(model)
+        self.ml_ptr, self.ice_cubes = self.extract_ice_cubes(model)
 
     def _init_params(self, epochs, lr, batch_size, scaling_factor):
         self.epochs = self.create_epochs(epochs)
@@ -12,7 +12,6 @@ class ProgressiveRecipes:
         self.batch_size = self.create_hyperparam(batch_size, scaling_factor)
         
     def progressive_simple(self, epochs=10, lr=0.001, batch_size=16, global_trainning=0, scaling_factor=1):
-
         """
         Recette "progressive_simple" :
           - Le modèle passe par chaque IceCube (chaque freezing constitue un cycle) puis une phase globale.
@@ -69,7 +68,7 @@ class ProgressiveRecipes:
         # Vérification des enfants directs
         for name, module in model.named_children():
             if isinstance(module, nn.ModuleList):
-                return [(f"{name}.{i}", sub_module)
+                return module, [(f"{name}.{i}", sub_module)
                         for i, sub_module in enumerate(module)]
         
         # Sinon, recherche dans le premier niveau d'imbrication
@@ -77,7 +76,7 @@ class ProgressiveRecipes:
             for sub_name, sub_module in module.named_children():
                 if isinstance(sub_module, nn.ModuleList):
                     full_name = f"{name}.{sub_name}"
-                    return [(f"{full_name}.{i}", sub_module_i)
+                    return sub_module, [(f"{full_name}.{i}", sub_module_i)
                             for i, sub_module_i in enumerate(sub_module)]
         
         # Aucun ModuleList trouvé
