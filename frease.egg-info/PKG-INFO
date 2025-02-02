@@ -1,0 +1,9 @@
+Metadata-Version: 2.2
+Name: frease
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.6.0
+
+IceCubes

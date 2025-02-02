@@ -19,11 +19,15 @@ name = "frease"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "setuptools" },
     { name = "torch" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "torch", specifier = ">=2.6.0" }]
+requires-dist = [
+    { name = "setuptools", specifier = ">=75.8.0" },
+    { name = "torch", specifier = ">=2.6.0" },
+]
 
 [[package]]
 name = "fsspec"
