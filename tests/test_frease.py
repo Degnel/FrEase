@@ -4,24 +4,23 @@ from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 import torch
 
+
 class Model(nn.Module):
     def __init__(self, dim):
         super(Model, self).__init__()
-        self.ml = nn.ModuleList([
-            nn.ReLU(),
-            nn.Linear(dim, dim),
-            nn.ReLU(),
-            nn.Linear(dim, dim),
-            nn.ReLU()
-        ])
+        self.ml = nn.ModuleList(
+            [nn.ReLU(), nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, dim), nn.ReLU()]
+        )
         self.linear1 = nn.Linear(dim, dim)
         self.linear2 = nn.Linear(dim, dim)
+
     def forward(self, x):
         x = self.linear1(x)
         for module in self.ml:
             x = module(x)
         x = self.linear2(x)
         return x
+
 
 class xyDataset(Dataset):
     def __init__(self, X, y):
@@ -33,7 +32,7 @@ class xyDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
-    
+
 
 epochs = 10
 lr = 0.001
@@ -55,6 +54,8 @@ optimizer(model.parameters(), lr)
 criterion = nn.MSELoss()
 
 training_recipe = ProgressiveRecipes(model)
-training_recipe.progressive_simple(epochs, lr, group_size, global_trainning, scaling_factor)
+training_recipe.iterative_freeze_defreeze(
+    epochs, lr, group_size, global_trainning, scaling_factor
+)
 trainer = ProgressiveTrainer(training_recipe)
 trainer.train(data_loader, optimizer, criterion)

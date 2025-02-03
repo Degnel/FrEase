@@ -105,9 +105,7 @@ class TransformerEncoderLayer(nn.Module):
         dropout: float = 0.1,
     ) -> None:
         super(TransformerEncoderLayer, self).__init__()
-        self.self_attention = MultiHeadAttention(
-            d_model, n_heads
-        )
+        self.self_attention = MultiHeadAttention(d_model, n_heads)
 
         self.fc_1 = nn.Linear(d_model, d_ff)
         self.fc_2 = nn.Linear(d_ff, d_model)

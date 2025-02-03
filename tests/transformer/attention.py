@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+
 class MultiHeadAttention(nn.Module):
     """
     Implements a multi-head attention mechanism with optional quantization for

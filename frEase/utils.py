@@ -1,12 +1,14 @@
 import math
 import torch.nn as nn
 
+
 def floor_power2(n: float) -> int:
     """
     Renvoie la plus grande puissance de 2 inférieure ou égale à n.
     Par exemple, floor_power2(35) renverra 32.
     """
     return 2 ** int(math.floor(math.log(n, 2))) if n > 0 else 0
+
 
 def freeze_layers(model: nn.Module, except_layers: list = None):
     """
@@ -17,6 +19,7 @@ def freeze_layers(model: nn.Module, except_layers: list = None):
             param.requires_grad = True
         else:
             param.requires_grad = False
+
 
 def unfreeze_layers(model: nn.Module):
     """
