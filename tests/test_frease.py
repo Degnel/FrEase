@@ -36,7 +36,7 @@ class xyDataset(Dataset):
 
 epochs = 10
 lr = 0.001
-group_size = 1
+group_size = 2
 global_trainning = 2
 scaling_factor = 2
 batch_size = 99
@@ -45,16 +45,16 @@ dim = 10
 
 model = Model(dim)
 
-X = torch.zeros((batch_size, mini_batch_size, dim))
-y = torch.zeros((batch_size, mini_batch_size, dim))
+X = torch.zeros((batch_size, dim))
+y = torch.zeros((batch_size, dim))
 dataset = xyDataset(X, y)
-data_loader = DataLoader(dataset, batch_size=batch_size)
+data_loader = DataLoader(dataset, batch_size=mini_batch_size)
 optimizer = optim.AdamW
 optimizer(model.parameters(), lr)
 criterion = nn.MSELoss()
 
 training_recipe = ProgressiveRecipes(model)
-training_recipe.iterative_freeze_defreeze(
+training_recipe.progressive_simple(
     epochs, lr, group_size, global_trainning, scaling_factor
 )
 trainer = ProgressiveTrainer(training_recipe)

@@ -1,3 +1,5 @@
+import torch
+
 class GroupedIterator:
     def __init__(self, dataloader, group_size):
         """
@@ -10,17 +12,25 @@ class GroupedIterator:
         self.dataloader = dataloader
         self.group_size = group_size
         self.iterator = iter(dataloader)
+        self.batch_size = None
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        group = []
+        inputs = []
+        outputs = []
         for _ in range(self.group_size):
             try:
-                group.append(next(self.iterator))
+                x, y = next(self.iterator)
+                inputs.append(x)
+                outputs.append(y)
             except StopIteration:
                 break
-        if group:
-            return group
+        if not self.batch_size:
+            self.batch_size = self.group_size * len(inputs[0])
+        if inputs and outputs:
+            concat_inputs = torch.cat(inputs, dim=0)
+            concat_outputs = torch.cat(outputs, dim=0)
+            return concat_inputs, concat_outputs
         raise StopIteration

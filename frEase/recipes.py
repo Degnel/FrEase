@@ -35,9 +35,10 @@ class ProgressiveRecipes:
           - Si le modèle comporte n IceCubes, on effectue n * iterations cycles.
         """
         ic_len = len(self.ice_cubes)
-        frozen_cubes = [
+        frozen_cubes = [[j != i for j in range(i + 1)] for i in range(ic_len)]
+        frozen_cubes.extend([
             [i != j for j in range(ic_len)] for i in range(ic_len)
-        ] * iterations
+        ] * iterations)
         self.frozen_cubes = frozen_cubes
         self._init_params(epochs, lr, group_size, scaling_factor)
 

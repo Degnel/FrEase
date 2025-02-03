@@ -1,9 +1,16 @@
 Metadata-Version: 2.2
 Name: frease
 Version: 0.1.0
-Summary: Add your description here
+Summary: A frenchy package, that starts with a shallow PyTorch model and progressively adds layers 
+Author-email: Clustery <bigarnaque@gmail.com>
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+Requires-Dist: setuptools>=75.8.0
 Requires-Dist: torch>=2.6.0
 
 IceCubes
+
+TODO:
+Recipe: Faire en sorte d'ajuster le recipe si on a des layers sans poids -> dans ce cas il faut les ajouter avec le layer précédent car il est inutile d'apprendre
+
+WARNING: Attention le loading d'un modèle ne fonctionne probablement pas (il n'a pas été testé en condition réelle)

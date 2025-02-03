@@ -1,10 +1,22 @@
 [project]
 name = "frease"
 version = "0.1.0"
-description = "Add your description here"
+authors = [
+    {name = "Clustery", email = "bigarnaque@gmail.com"}
+]
+
+description = """A frenchy package, that starts with a shallow PyTorch model and progressively adds layers 
+while freezing previous ones, similar to boosting by minimizing residuals at each step. 
+This method, also inspired by simulated annealing, 
+enables independent retraining of each section for improved model performance."""
+
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "rich>=13.9.4",
     "setuptools>=75.8.0",
     "torch>=2.6.0",
 ]
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "tests.*"]

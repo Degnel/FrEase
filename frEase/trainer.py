@@ -1,14 +1,9 @@
 import torch
 import os
-import torch.nn as nn
-from torch.utils.data.dataloader import default_collate
-
-# from .utils import freeze_layers, unfreeze_layers, floor_power2
-from .grouped_iterator import GroupedIterator
-
-# from .model_parser import ice_cube_dicer
+from frEase.grouped_iterator import GroupedIterator
 from frEase.recipes import ProgressiveRecipes
 from frEase.freezer import Freezer
+from frEase.thermal_camera import ThermalCamera
 import pickle as pkl
 
 
@@ -25,7 +20,7 @@ class ProgressiveTrainer:
         ), "recipe must be a progressive recipe or a path to a progressive recipe"
         self.freezer = Freezer(recipe)
 
-    def train_step(self, optimizer, criterion, grouped_batches):
+    def train_step(self, optimizer, criterion, grouped_batches: GroupedIterator):
         """
         Effectue une passe d'entraînement sur les groupes issus du GroupedIterator.
         Si le groupe n'est pas complet (dernier groupe d'un epoch), ajuste le lr proportionnellement.
@@ -33,21 +28,20 @@ class ProgressiveTrainer:
         total_loss = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.recipe.model.train()
-        for i, group in enumerate(grouped_batches):
-            expected_size = grouped_batches.group_size
-            current_size = len(group)
-            current_lr = optimizer.param_groups[0]["lr"]
+        for i, (inputs, outputs) in enumerate(grouped_batches):
+            expected_size = grouped_batches.batch_size
+            current_size = inputs.shape[0]
             if current_size < expected_size:
+                current_lr = optimizer.param_groups[0]["lr"]
                 adjusted_lr = current_lr * (current_size / expected_size)
                 for param_group in optimizer.param_groups:
                     param_group["lr"] = adjusted_lr
                 print(
                     f"  Groupe incomplet (taille {current_size}/{expected_size}) → lr ajusté à {adjusted_lr:.6f}"
                 )
-            batch = default_collate(group)
             optimizer.zero_grad()
-            inputs = batch[0].to(device)
-            targets = batch[1].to(device)
+            inputs = inputs.to(device)
+            targets = outputs.to(device)
             outputs = self.recipe.model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
@@ -75,10 +69,12 @@ class ProgressiveTrainer:
             with open(file_path, "wb") as fichier:
                 pkl.dump(self.recipe, fichier)
 
+        thermal_camera = ThermalCamera()
         for cycle in range(cycles):
             next(self.freezer)
             num_epoch = self.recipe.epochs[cycle]
             print(f"--- Cycle {cycle+1}/{cycles} ---")
+            thermal_camera.display_network_state(self.recipe.frozen_cubes[cycle])
             loss = 0
             for epoch in range(num_epoch):
                 current_lr = self.recipe.lr[cycle][epoch]
