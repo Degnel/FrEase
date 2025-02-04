@@ -28,7 +28,8 @@ class ProgressiveTrainer:
         total_loss = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.recipe.model.train()
-        for i, (inputs, outputs) in enumerate(grouped_batches):
+        self.recipe.model.to(device)
+        for i, (inputs, targets) in enumerate(grouped_batches):
             expected_size = grouped_batches.batch_size
             current_size = inputs.shape[0]
             if current_size < expected_size:
@@ -36,17 +37,18 @@ class ProgressiveTrainer:
                 adjusted_lr = current_lr * (current_size / expected_size)
                 for param_group in optimizer.param_groups:
                     param_group["lr"] = adjusted_lr
-                print(
-                    f"  Groupe incomplet (taille {current_size}/{expected_size}) → lr ajusté à {adjusted_lr:.6f}"
-                )
+                # print(
+                #     f"  Groupe incomplet (taille {current_size}/{expected_size}) → lr ajusté à {adjusted_lr:.6f}"
+                # )
             optimizer.zero_grad()
-            inputs = inputs.to(device)
-            targets = outputs.to(device)
+            inputs, targets = inputs.to(device), targets.to(device)
             outputs = self.recipe.model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.recipe.model.parameters(), 1)
             optimizer.step()
             total_loss += loss.item()
+            print(f"  Batch {i+1} - Loss: {loss.item():.4f}")
 
         total_loss /= i + 1
         return total_loss
@@ -75,33 +77,36 @@ class ProgressiveTrainer:
             num_epoch = self.recipe.epochs[cycle]
             print(f"--- Cycle {cycle+1}/{cycles} ---")
             thermal_camera.display_network_state(self.recipe.frozen_cubes[cycle])
-            loss = 0
+            optim = optimizer(self.recipe.model.parameters())
+
             for epoch in range(num_epoch):
                 current_lr = self.recipe.lr[cycle][epoch]
+                for param_group in optim.param_groups:
+                    param_group["lr"] = current_lr
                 current_gs = self.recipe.group_size[cycle][epoch]
-                optim = optimizer(self.recipe.model.parameters(), current_lr)
-                print(
-                    f"Epoch {epoch+1}/{num_epoch} - group_size effectif: {current_gs}, lr: {current_lr:.6f}"
-                )
                 grouped_batches = GroupedIterator(data_loader, group_size=current_gs)
-                loss += self.train_step(optim, criterion, grouped_batches)
-
-            loss /= num_epoch
-            print(f"Loss: {loss:.4f}")
+                # print(
+                #     f"Epoch {epoch+1}/{num_epoch} - group_size effectif: {current_gs}, lr: {current_lr:.6f}"
+                # )
+                loss = self.train_step(optim, criterion, grouped_batches)
+                print(f"Epoch {epoch+1}/{num_epoch} - Loss {loss}")
 
             if save_checkpoints:
                 file_name = f"checkpoint_{cycle}.pt"
                 file_path = os.path.join(saving_path, file_name)
                 self.save_architecture(file_path)
 
-            if test_loader:
+            if test_loader is not None:
                 if test_criterion:
                     test_loss = self.test_model(test_loader, test_criterion)
                 else:
-                    self.test_model(test_loader, criterion)
+                    test_loss = self.test_model(test_loader, criterion)
                 print(f"Test - Loss: {test_loss:.4f}")
-
-        return
+        
+        if test_loader is None:
+            return loss
+        else:
+            return loss, test_loss
 
     def test_model(self, test_loader, criterion):
         """
@@ -113,12 +118,13 @@ class ProgressiveTrainer:
         self.recipe.model.eval()
         total_loss = 0
         with torch.no_grad():
-            for i, batch in enumerate(test_loader):
-                inputs = batch[0].to(device)
-                targets = batch[1].to(device)
+            for i, (inputs, outputs) in enumerate(test_loader):
+                inputs = inputs.to(device)
+                targets = outputs.to(device)
                 outputs = self.recipe.model(inputs)
                 loss = criterion(outputs, targets)
                 total_loss += loss.item()
+                print(f"  Test Batch {i+1} - Loss: {loss.item():.4f}")
 
         total_loss /= i + 1
         return total_loss

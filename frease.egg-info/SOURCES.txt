@@ -5,8 +5,8 @@ frEase/__init__.py
 frEase/freezer.py
 frEase/grouped_iterator.py
 frEase/icecube.py
-frEase/model_parser.py
 frEase/recipes.py
+frEase/thermal_camera.py
 frEase/trainer.py
 frEase/utils.py
 frease.egg-info/PKG-INFO

@@ -38,6 +38,7 @@ epochs = 10
 lr = 0.001
 group_size = 2
 global_trainning = 2
+iterations = 1
 scaling_factor = 2
 batch_size = 99
 mini_batch_size = 16
@@ -54,8 +55,8 @@ optimizer(model.parameters(), lr)
 criterion = nn.MSELoss()
 
 training_recipe = ProgressiveRecipes(model)
-training_recipe.progressive_simple(
-    epochs, lr, group_size, global_trainning, scaling_factor
+training_recipe.base_recipe(
+    epochs, lr, group_size, global_trainning, iterations, scaling_factor
 )
 trainer = ProgressiveTrainer(training_recipe)
 trainer.train(data_loader, optimizer, criterion)

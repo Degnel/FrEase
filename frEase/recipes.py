@@ -12,33 +12,20 @@ class ProgressiveRecipes:
         self.lr = self.create_hyperparam(lr, scaling_factor)
         self.group_size = self.create_hyperparam(group_size, scaling_factor)
 
-    def progressive_simple(
-        self, epochs=10, lr=0.001, group_size=1, global_trainning=0, scaling_factor=1
+    def base_recipe(
+        self, epochs=10, lr=0.001, group_size=1, iterations=0, global_trainning=0, scaling_factor=1
     ):
         """
-        Recette "progressive_simple" :
+        Recette "base_recipe" :
           - Le modèle passe par chaque IceCube (chaque freezing constitue un cycle) puis une phase globale.
           - Si le modèle comporte n IceCubes, on effectue n + global_trainning cycles.
-        """
-        ic_len = len(self.ice_cubes)
-        frozen_cubes = [[j != i for j in range(i + 1)] for i in range(ic_len)]
-        frozen_cubes.extend([[False] * ic_len] * global_trainning)
-        self.frozen_cubes = frozen_cubes
-        self._init_params(epochs, lr, group_size, scaling_factor)
-
-    def iterative_freeze_defreeze(
-        self, epochs, lr, group_size, iterations=1, scaling_factor=1
-    ):
-        """
-        Recette "iterative_freeze_defreeze" :
-          - Le modèle est complet dès le départ, mais les IceCube ne sont dégelé qu'un part un.
-          - Si le modèle comporte n IceCubes, on effectue n * iterations cycles.
         """
         ic_len = len(self.ice_cubes)
         frozen_cubes = [[j != i for j in range(i + 1)] for i in range(ic_len)]
         frozen_cubes.extend([
             [i != j for j in range(ic_len)] for i in range(ic_len)
         ] * iterations)
+        frozen_cubes.extend([[False] * ic_len] * global_trainning)
         self.frozen_cubes = frozen_cubes
         self._init_params(epochs, lr, group_size, scaling_factor)
 

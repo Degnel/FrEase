@@ -18,12 +18,5 @@
             "program": "./tests/test_frease.py",
             "console": "integratedTerminal"
         },
-        {
-            "name": "Python Debugger: Rich Test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "./tests/rich.test.py",
-            "console": "integratedTerminal"
-        },
     ]
 }
