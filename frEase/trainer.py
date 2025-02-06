@@ -1,3 +1,4 @@
+import time
 import torch
 import os
 from frEase.grouped_iterator import GroupedIterator
@@ -19,8 +20,9 @@ class ProgressiveTrainer:
             recipe, ProgressiveRecipes
         ), "recipe must be a progressive recipe or a path to a progressive recipe"
         self.freezer = Freezer(recipe)
+        self.time_tracking = []
 
-    def train_step(self, optimizer, criterion, grouped_batches: GroupedIterator):
+    def train_step(self, optimizer, criterion, grouped_batches: GroupedIterator, show_batch_score):
         """
         Effectue une passe d'entraînement sur les groupes issus du GroupedIterator.
         Si le groupe n'est pas complet (dernier groupe d'un epoch), ajuste le lr proportionnellement.
@@ -48,7 +50,8 @@ class ProgressiveTrainer:
             torch.nn.utils.clip_grad_norm_(self.recipe.model.parameters(), 1)
             optimizer.step()
             total_loss += loss.item()
-            print(f"  Batch {i+1} - Loss: {loss.item():.4f}")
+            if show_batch_score:
+                print(f"  Batch {i+1} - Loss: {loss.item():.4f}")
 
         total_loss /= i + 1
         return total_loss
@@ -60,18 +63,22 @@ class ProgressiveTrainer:
         criterion,
         test_loader=None,
         test_criterion=None,
+        show_batch_score=False,
         save_checkpoints=True,
-        saving_path="./checkpoints",
+        checkpoints_saving_path="./checkpoints",
+        results_saving_name="./results/time_tracking.pkl"
     ):
         cycles = len(self.recipe.frozen_cubes)
         if save_checkpoints:
-            file_path = os.path.join(saving_path, "recipe.pkl")
-            if not os.path.exists(saving_path):
-                os.makedirs(saving_path)
+            file_path = os.path.join(checkpoints_saving_path, "recipe.pkl")
+            if not os.path.exists(checkpoints_saving_path):
+                os.makedirs(checkpoints_saving_path)
             with open(file_path, "wb") as fichier:
                 pkl.dump(self.recipe, fichier)
 
         thermal_camera = ThermalCamera()
+        start_time = time.time()
+
         for cycle in range(cycles):
             next(self.freezer)
             num_epoch = self.recipe.epochs[cycle]
@@ -88,27 +95,38 @@ class ProgressiveTrainer:
                 # print(
                 #     f"Epoch {epoch+1}/{num_epoch} - group_size effectif: {current_gs}, lr: {current_lr:.6f}"
                 # )
-                loss = self.train_step(optim, criterion, grouped_batches)
-                print(f"Epoch {epoch+1}/{num_epoch} - Loss {loss}")
+                loss = self.train_step(optim, criterion, grouped_batches, show_batch_score)
+
+                elapsed_time = time.time() - start_time
+                test_loss = None
+                if test_loader is not None:
+                    test_loss = self.test_model(test_loader, test_criterion or criterion, show_batch_score)
+                    print(f"Epoch: {epoch+1}/{num_epoch} - Loss: {loss:.4f} - Test: {test_loss:.4f} - Time: {elapsed_time:.2f}s")
+                else: 
+                    print(f"Epoch {epoch+1}/{num_epoch} - Loss {loss:.4f} - Time: {elapsed_time:.2f}s")
+                
+                self.time_tracking.append({
+                    "epoch": epoch + 1,
+                    "cycle": cycle + 1,
+                    "time": elapsed_time,
+                    "loss": loss,
+                    "test_loss": test_loss
+                })
 
             if save_checkpoints:
                 file_name = f"checkpoint_{cycle}.pt"
-                file_path = os.path.join(saving_path, file_name)
+                file_path = os.path.join(checkpoints_saving_path, file_name)
                 self.save_architecture(file_path)
 
-            if test_loader is not None:
-                if test_criterion:
-                    test_loss = self.test_model(test_loader, test_criterion)
-                else:
-                    test_loss = self.test_model(test_loader, criterion)
-                print(f"Test - Loss: {test_loss:.4f}")
+        with open(results_saving_name, "wb") as f:
+            pkl.dump(self.time_tracking, f)
         
         if test_loader is None:
             return loss
         else:
             return loss, test_loss
 
-    def test_model(self, test_loader, criterion):
+    def test_model(self, test_loader, criterion, show_batch_score):
         """
         Teste le modèle sur un jeu de test et affiche la perte moyenne et la précision (pour la classification).
         On suppose que le batch est un dictionnaire contenant 'input' et 'target'.
@@ -124,7 +142,8 @@ class ProgressiveTrainer:
                 outputs = self.recipe.model(inputs)
                 loss = criterion(outputs, targets)
                 total_loss += loss.item()
-                print(f"  Test Batch {i+1} - Loss: {loss.item():.4f}")
+                if show_batch_score:
+                    print(f"  Test Batch {i+1} - Loss: {loss.item():.4f}")
 
         total_loss /= i + 1
         return total_loss

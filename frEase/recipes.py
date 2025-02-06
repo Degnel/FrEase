@@ -13,7 +13,7 @@ class ProgressiveRecipes:
         self.group_size = self.create_hyperparam(group_size, scaling_factor)
 
     def base_recipe(
-        self, epochs=10, lr=0.001, group_size=1, iterations=0, global_trainning=0, scaling_factor=1
+        self, epochs=10, lr=0.001, group_size=1, iterations=0, global_trainning=0, scaling_factor=1, constructive=True
     ):
         """
         Recette "base_recipe" :
@@ -21,7 +21,10 @@ class ProgressiveRecipes:
           - Si le modèle comporte n IceCubes, on effectue n + global_trainning cycles.
         """
         ic_len = len(self.ice_cubes)
-        frozen_cubes = [[j != i for j in range(i + 1)] for i in range(ic_len)]
+        if constructive:
+            frozen_cubes = [[j != i for j in range(i + 1)] for i in range(ic_len)]
+        else:
+            frozen_cubes = []
         frozen_cubes.extend([
             [i != j for j in range(ic_len)] for i in range(ic_len)
         ] * iterations)

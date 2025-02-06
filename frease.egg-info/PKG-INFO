@@ -25,6 +25,8 @@ training_recipe.iterative_freeze_defreeze(
    epochs, lr, group_size, global_trainning, scaling_factor
 )
 
+I'm starting to love this package. It's the ultimate way to make large nn converge super fast. Probably making it reach local minima, but hell it is quick.
+
 
 TODO:
 Recipe: Faire en sorte d'ajuster le recipe si on a des layers sans poids -> dans ce cas il faut les ajouter avec le layer précédent car il est inutile d'apprendre
