@@ -2,6 +2,7 @@ import shutil
 from rich.console import Console
 from rich.text import Text
 
+
 class ThermalCamera:
     def __init__(self):
         self.console = Console()

@@ -1,4 +1,4 @@
-from transformer.attention import MultiHeadAttention
+from tests.transformer.attention import MultiHeadAttention
 import torch.nn as nn
 import torch
 
@@ -29,6 +29,7 @@ class Transformer(nn.Module):
         vocab_size: int | None = None,
         max_context_size: int = 512,
         mask: bool = True,
+        lora_ratio: float = 4,
     ):
         super(Transformer, self).__init__()
         self.d_model = d_model
@@ -42,6 +43,7 @@ class Transformer(nn.Module):
                     n_heads,
                     d_ff,
                     dropout,
+                    lora_ratio,
                 )
                 for _ in range(depth)
             ]
@@ -103,9 +105,10 @@ class TransformerEncoderLayer(nn.Module):
         n_heads: int,
         d_ff: int,
         dropout: float = 0.1,
+        lora_ratio: float = 4,
     ) -> None:
         super(TransformerEncoderLayer, self).__init__()
-        self.self_attention = MultiHeadAttention(d_model, n_heads)
+        self.self_attention = MultiHeadAttention(d_model, n_heads, lora_ratio)
 
         self.fc_1 = nn.Linear(d_model, d_ff)
         self.fc_2 = nn.Linear(d_ff, d_model)

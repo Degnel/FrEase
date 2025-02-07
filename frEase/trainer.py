@@ -22,7 +22,9 @@ class ProgressiveTrainer:
         self.freezer = Freezer(recipe)
         self.time_tracking = []
 
-    def train_step(self, optimizer, criterion, grouped_batches: GroupedIterator, show_batch_score):
+    def train_step(
+        self, optimizer, criterion, grouped_batches: GroupedIterator, show_batch_score
+    ):
         """
         Effectue une passe d'entraînement sur les groupes issus du GroupedIterator.
         Si le groupe n'est pas complet (dernier groupe d'un epoch), ajuste le lr proportionnellement.
@@ -66,7 +68,7 @@ class ProgressiveTrainer:
         show_batch_score=False,
         save_checkpoints=True,
         checkpoints_saving_path="./checkpoints",
-        results_saving_name="./results/time_tracking.pkl"
+        results_saving_name="./results/time_tracking.pkl",
     ):
         cycles = len(self.recipe.frozen_cubes)
         if save_checkpoints:
@@ -95,32 +97,46 @@ class ProgressiveTrainer:
                 # print(
                 #     f"Epoch {epoch+1}/{num_epoch} - group_size effectif: {current_gs}, lr: {current_lr:.6f}"
                 # )
-                loss = self.train_step(optim, criterion, grouped_batches, show_batch_score)
+                loss = self.train_step(
+                    optim, criterion, grouped_batches, show_batch_score
+                )
 
                 elapsed_time = time.time() - start_time
                 test_loss = None
                 if test_loader is not None:
-                    test_loss = self.test_model(test_loader, test_criterion or criterion, show_batch_score)
-                    print(f"Epoch: {epoch+1}/{num_epoch} - Loss: {loss:.4f} - Test: {test_loss:.4f} - Time: {elapsed_time:.2f}s")
-                else: 
-                    print(f"Epoch {epoch+1}/{num_epoch} - Loss {loss:.4f} - Time: {elapsed_time:.2f}s")
-                
-                self.time_tracking.append({
-                    "epoch": epoch + 1,
-                    "cycle": cycle + 1,
-                    "time": elapsed_time,
-                    "loss": loss,
-                    "test_loss": test_loss
-                })
+                    test_loss = self.test_model(
+                        test_loader, test_criterion or criterion, show_batch_score
+                    )
+                    print(
+                        f"Epoch: {epoch+1}/{num_epoch} - Loss: {loss:.4f} - Test: {test_loss:.4f} - Time: {elapsed_time:.2f}s"
+                    )
+                else:
+                    print(
+                        f"Epoch {epoch+1}/{num_epoch} - Loss {loss:.4f} - Time: {elapsed_time:.2f}s"
+                    )
+
+                self.time_tracking.append(
+                    {
+                        "epoch": epoch + 1,
+                        "cycle": cycle + 1,
+                        "time": elapsed_time,
+                        "loss": loss,
+                        "test_loss": test_loss,
+                    }
+                )
 
             if save_checkpoints:
                 file_name = f"checkpoint_{cycle}.pt"
                 file_path = os.path.join(checkpoints_saving_path, file_name)
                 self.save_architecture(file_path)
 
+        dir_name = os.path.dirname(results_saving_name)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+
         with open(results_saving_name, "wb") as f:
             pkl.dump(self.time_tracking, f)
-        
+
         if test_loader is None:
             return loss
         else:

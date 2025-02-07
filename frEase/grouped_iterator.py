@@ -1,5 +1,6 @@
 import torch
 
+
 class GroupedIterator:
     def __init__(self, dataloader, group_size):
         """

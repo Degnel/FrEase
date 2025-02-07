@@ -18,5 +18,12 @@
             "program": "./tests/test_frease.py",
             "console": "integratedTerminal"
         },
+        {
+            "name": "Python Debugger: Tiny Stories Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./tests/tiny_stories/test_tiny_stories.py",
+            "console": "integratedTerminal"
+        },
     ]
 }
