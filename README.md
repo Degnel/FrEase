@@ -16,6 +16,12 @@ training_recipe.iterative_freeze_defreeze(
 
 I'm starting to love this package. It's the ultimate way to make large nn converge super fast. Probably making it reach local minima, but hell it is quick.
 
+Les avantages du freezing :
+- convergence plus rapide
+- sauvegarde des poids moins lourde (car on peut se permettre de n'enregistrer que les poids entrainés à chaque étape)
+- passe avant plus rapide si l'on enregistre les valeurs en sortie des icebergs (les blocs freeze au début du modèle) -> cela évite de refaire la passe avant dans les parties freeze que l'on connait déjà
+- l'entrainement progressif permet d'incentiver naturellement le réseau à prédire le prochain token dès la première couche -> cela ouvre une porte royale vers l'early exiting
+- il permet également une certaine forme de régularisation que je présens accélérer la convergence vers la phase de grokking
 
 TODO:
 Recipe: Faire en sorte d'ajuster le recipe si on a des layers sans poids -> dans ce cas il faut les ajouter avec le layer précédent car il est inutile d'apprendre
