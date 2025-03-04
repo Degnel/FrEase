@@ -1,4 +1,3 @@
-from torch import nn
 from frEase.recipes import ProgressiveRecipes
 
 

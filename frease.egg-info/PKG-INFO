@@ -5,6 +5,8 @@ Summary: A frenchy package, that starts with a shallow PyTorch model and progres
 Author-email: Clustery <bigarnaque@gmail.com>
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+Requires-Dist: datasets>=3.2.0
+Requires-Dist: matplotlib>=3.10.0
 Requires-Dist: rich>=13.9.4
 Requires-Dist: setuptools>=75.8.0
 Requires-Dist: torch>=2.6.0

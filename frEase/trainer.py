@@ -16,9 +16,9 @@ class ProgressiveTrainer:
         else:
             self.recipe = recipe
 
-        assert isinstance(
-            recipe, ProgressiveRecipes
-        ), "recipe must be a progressive recipe or a path to a progressive recipe"
+        assert isinstance(recipe, ProgressiveRecipes), (
+            "recipe must be a progressive recipe or a path to a progressive recipe"
+        )
         self.freezer = Freezer(recipe)
         self.time_tracking = []
 
@@ -53,7 +53,7 @@ class ProgressiveTrainer:
             optimizer.step()
             total_loss += loss.item()
             if show_batch_score:
-                print(f"  Batch {i+1} - Loss: {loss.item():.4f}")
+                print(f"  Batch {i + 1} - Loss: {loss.item():.4f}")
 
         total_loss /= i + 1
         return total_loss
@@ -84,7 +84,7 @@ class ProgressiveTrainer:
         for cycle in range(cycles):
             next(self.freezer)
             num_epoch = self.recipe.epochs[cycle]
-            print(f"--- Cycle {cycle+1}/{cycles} ---")
+            print(f"--- Cycle {cycle + 1}/{cycles} ---")
             thermal_camera.display_network_state(self.recipe.frozen_cubes[cycle])
             optim = optimizer(self.recipe.model.parameters())
 
@@ -108,11 +108,11 @@ class ProgressiveTrainer:
                         test_loader, test_criterion or criterion, show_batch_score
                     )
                     print(
-                        f"Epoch: {epoch+1}/{num_epoch} - Loss: {loss:.4f} - Test: {test_loss:.4f} - Time: {elapsed_time:.2f}s"
+                        f"Epoch: {epoch + 1}/{num_epoch} - Loss: {loss:.4f} - Test: {test_loss:.4f} - Time: {elapsed_time:.2f}s"
                     )
                 else:
                     print(
-                        f"Epoch {epoch+1}/{num_epoch} - Loss {loss:.4f} - Time: {elapsed_time:.2f}s"
+                        f"Epoch {epoch + 1}/{num_epoch} - Loss {loss:.4f} - Time: {elapsed_time:.2f}s"
                     )
 
                 self.time_tracking.append(
@@ -126,9 +126,7 @@ class ProgressiveTrainer:
                 )
 
             if save_checkpoints:
-                file_name = f"checkpoint_{cycle}.pt"
-                file_path = os.path.join(checkpoints_saving_path, file_name)
-                self.save_architecture(file_path)
+                self.save_architecture(checkpoints_saving_path, cycle)
 
         dir_name = os.path.dirname(results_saving_name)
         if not os.path.exists(dir_name):
@@ -159,24 +157,41 @@ class ProgressiveTrainer:
                 loss = criterion(outputs, targets)
                 total_loss += loss.item()
                 if show_batch_score:
-                    print(f"  Test Batch {i+1} - Loss: {loss.item():.4f}")
+                    print(f"  Test Batch {i + 1} - Loss: {loss.item():.4f}")
 
         total_loss /= i + 1
         return total_loss
 
-    def save_architecture(self, file_path: str):
+    def save_architecture(self, path: str, stage: int):
         """
         Sauvegarde l'état du modèle dans un fichier via torch.save.
         """
-        torch.save(self.recipe.model.state_dict(), file_path)
+
+        file_name = f"checkpoint_{stage}.pt"
+        file_path = os.path.join(path, file_name)
+        params = (
+            {
+                k: v
+                for k, v in self.recipe.model.state_dict().items()
+                if self.recipe.model.get_parameter(k).requires_grad
+            }
+            if stage > 0
+            else self.recipe.model.state_dict()
+        )
+        torch.save(params, file_path)
         print(f"Architecture sauvegardée dans {file_path}")
 
-    def load_architecture(self, file_path: str, stage: int):
+    def load_architecture(self, path: str, stage: int):
         """
         Recharge l'état du modèle à partir d'un fichier via torch.load.
         """
-        state = torch.load(file_path)
-        for _ in range(stage):
+        self.freezer = Freezer(self.recipe)
+        for s in range(stage):
             next(self.freezer)
-        self.recipe.model.load_state_dict(state)
-        print(f"Architecture rechargée depuis {file_path}")
+            file_name = f"checkpoint_{s}.pt"
+            file_path = os.path.join(path, file_name)
+            new_params = torch.load(file_path)
+            current_params = self.recipe.model.state_dict()
+            params = {**current_params, **new_params}
+            self.recipe.model.load_state_dict(params)
+            print(f"Architecture rechargée depuis {file_path}")

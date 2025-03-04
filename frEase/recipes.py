@@ -76,9 +76,9 @@ class ProgressiveRecipes:
         if isinstance(epochs, int):
             return [epochs] * len(self.frozen_cubes)
         elif isinstance(epochs, list):
-            assert isinstance(epochs, list) and len(epochs) == len(
-                self.frozen_cubes
-            ), "epochs must be the same size as frozen cubes"
+            assert isinstance(epochs, list) and len(epochs) == len(self.frozen_cubes), (
+                "epochs must be the same size as frozen cubes"
+            )
             return epochs
         else:
             raise ValueError("epochs must be an integer or a list of integers.")
